@@ -1,0 +1,259 @@
+
+
+```{r}
+set.seed(1)
+# Download Libraries
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(mirt)
+```
+
+# Simulate Functions
+```{r}
+### Simulate GRM
+th=sort(rnorm(1000))
+library("truncnorm")
+th=sort(rtruncnorm(n=1000, a=-3, b=3, mean=0, sd=1))
+
+simgrm<-function(th,b,a) {
+  invlogit<-function(z) 1/(1+exp(-z))
+  K<-length(b)+1
+  pr<-list()
+  for (i in 1:(K-1)) pr[[i]]<-invlogit(a*(th-b[i]))
+  pr<-do.call("cbind",pr)
+  pr<-cbind(1,pr,0)
+  p<-list()
+  for (i in 1:K) p[[i]]<-pr[,i]-pr[,i+1]
+  p<-do.call("cbind",p)
+  colnames(p)<-paste("truep",0:(ncol(p)-1),sep='')
+  resp<-numeric()
+  for (i in 1:length(th)) resp[i]<-which(rmultinom(1,1,p[i,])[,1]>0)-1
+  id=1:length(th)
+  data.frame(cbind(id, th.true=th, p, resp))
+}
+
+### Simulate NRM
+simnrm<-function(th, c, a) {
+  K<-length(a)
+  z<-list()
+  for (k in 1:K) {
+    kern<-a[k]*th+c[k]
+    z[[k]]<-exp(kern)
+  }
+  z<-do.call("cbind", z)
+  den<-rowSums(z)
+  p<-z/den
+  colnames(p)<-paste("truep",0:(ncol(p)-1), sep='')
+  resp<-numeric()
+  for (i in 1:length(th)) resp[i]<-which(rmultinom(1, 1, p[i,])[,1]>0)-1
+  id=1:length(th)
+  data.frame(cbind(id, th.true=th, p, resp))
+}
+
+### Simulate GPCM
+simpcm<-function(th,b,a) {
+  K<-length(b)+1
+  psi<-list()
+  psi[[1]]<-rep(1,length(th))
+  for (k in 1:(K-1)) {
+    kern<-k*th-sum(b[1:k])
+    psi[[k+1]]<-exp(a*kern)
+  }
+  psi<-do.call("cbind",psi)
+  den<-rowSums(psi)
+  p<-psi/den
+  colnames(p)<-paste("truep",0:(ncol(p)-1),sep='')
+  resp<-numeric()
+  for (i in 1:length(th)) resp[i]<-which(rmultinom(1,1,p[i,])[,1]>0)-1
+  id=1:length(th)
+  data.frame(cbind(id, th.true=th, p, resp))
+}
+
+# Given list of item dataframes we separate item responses for each item max create response dataframe
+resp_th= function(list){
+  df=data.frame(th)
+  for (i in 1:length(list)){
+    df[[i+1]]<-list[[i]][, ncol(list[[i]])]
+  }
+  colnames(df)<-c("th", paste("Item", 1:(length(list)),sep='') )
+  df
+}
+```
+
+# GRM
+```{r}
+set.seed(1)
+## Generate ordered data with GRM
+# Make 100 Item Responses
+
+n_i=100 # Number of Items
+bs<-data.frame(b1=0, b2=sort(c(runif(n_i-5, min=0.1, max=3), 0, 0.1, 1.4, 2, 3 )) ) #Crating c(b1, b2) pairs for CRFs.
+
+a=1
+# Varying b
+# Generate a list of 25 GRM item-dataframes containing each item responses with given thetas and different values of b2
+ordered.grm=list()
+for (i in 1:n_i){
+  b=c(bs[i,1], bs[i,2]) # taking each row of bs (0, b2)
+  df.grm=list(simgrm(th, b=b, a=a)) #Item dffer each pair of b1, b2 with (th, probabilities, actual response)
+  ordered.grm[i]=df.grm # Stacking these dataframes inmax a list
+}
+resp.th.ordered.grm=resp_th(ordered.grm)
+saveRDS(ordered.grm, file="ordered.grm.Vary_b,a=1.RData")
+
+# Varying a
+a_i<-sort(c(runif(n_i-6, min=0.1, max=3), 0, 0.14, 0.5, 1, 1.5, 3) )
+ordered.grm.a=list()
+for (i in 1:n_i){
+  df.grm.a=list(simgrm(th, b=c(0, 1), a=a_i[i]))
+  ordered.grm.a[i]=df.grm.a
+}
+resp.th.ordered.grm.a=resp_th(ordered.grm.a)
+saveRDS(ordered.grm.a, file="ordered.grm.Vary_a.RData")
+```
+
+# GRM one constant
+```{r}
+set.seed(1)
+simgrm.const<-function(th,b,a) {
+  invlogit<-function(z) 1/(1+exp(-z))
+  K<-length(b)+1
+  pr<-list()
+  for (i in 1:(K-1)) pr[[i]]<-invlogit(a*(th-b[i]))
+  pr<-do.call("cbind",pr)
+  pr<-cbind(1,pr,0)
+  p<-list()
+  for (i in 1:K) p[[i]]<-(pr[,i]-pr[,i+1])*0.75
+  p[[K+1]]=0.25
+  p<-do.call("cbind",p)
+  colnames(p)<-paste("truep",0:(ncol(p)-1),sep='')
+  resp<-numeric()
+  rowSums(p)
+  for (i in 1:length(th)) resp[i]<-which(rmultinom(1,1,p[i,])[,1]>0)-1
+  id=1:length(th)
+  data.frame(cbind(id, th.true=th, p, resp))
+}
+
+# Varying b
+ordered.grm.const=list()
+for (i in 1:n_i){
+  b=c(bs[i,1], bs[i,2]) 
+  df.grm=list(simgrm.const(th, b=b, a=1))
+  ordered.grm.const[i]=df.grm 
+}
+
+# Varying a
+ordered.grm.a.const=list()
+for (i in 1:n_i){
+  df.grm.a=list(simgrm.const(th, b=c(0, 1), a=a_i[i]))
+  ordered.grm.a.const[i]=df.grm.a
+}
+
+saveRDS(ordered.grm.const, file="ordered.grm.const.RData")
+saveRDS(ordered.grm.a.const, file="ordered.grm.a.const.RData")
+```
+
+# GPCM
+```{r}
+set.seed(1)
+
+# GPCM Varying a
+ordered.gpcm.a=list()
+for (i in 1:n_i){
+  df.gpcm.a=list(simpcm(th, b=c(0, 1), a=a_i[i]))
+  ordered.gpcm.a[i]=df.gpcm.a
+}
+resp.th.ordered.gpcm.a=resp_th(ordered.gpcm.a)
+saveRDS(ordered.gpcm.a, file="ordered.gpcm.Vary_a.RData")
+
+# GPCM Varying b
+crossed.pcm=list()
+bs.c<-data.frame(b1=0, b2=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3 )) ) 
+for (i in 1:n_i){
+  df.gpcm=list(simpcm(th, b=c(bs.c[i,1], bs.c[i,2]), a=1))
+  crossed.pcm[i]=df.gpcm
+}
+saveRDS(crossed.pcm, file="crossed.pcm.RData")
+```
+
+# NRM - Nominal a2 Varies. Constrains a0=0, c0=0 Loadings
+```{r}
+set.seed(1)
+c<-c(0, 1, 2 )
+all.a2.val<-data.frame(a1=0, a2=sort( c(runif(n_i-3, min=-3, max=3), -2, 1, 3 )), a3=2 )
+all.a2=list()
+for (i in 1:n_i){
+  df.nrm1=list(simnrm(th, c=c, a=as.numeric(all.a2.val[i,])))
+  all.a2[i]=df.nrm1   
+}
+saveRDS(all.a2, file="all.a2.RData")
+```
+
+# NRM - Nominal c2 varies. Constratrains a0=0, c0=0 Loadings
+```{r}
+set.seed(1)
+as<-c(0, 1, 2)
+all.c2.val<-data.frame(c1=0, c2=sort(c( runif(n_i-3, min=-3, max=3), -2, 1, 3 )), c3=2 )
+
+all.c2=list()
+for (i in 1:n_i){
+  df.nrm1=list(simnrm(th, c=as.numeric(all.c2.val[i,]), a=as ) ) # simuating Item dataframe with NRM
+  all.c2[i]=df.nrm1 # Stacking these dataframes inmax a list
+}
+saveRDS(all.c2, file="all.c2.RData")
+```
+
+# Unfolding 
+```{r}
+# rho Varies
+set.seed(1)
+unfolding<-function(th,delta, rho) { #simulate data min andrich's irf
+  n<-cosh(rho)
+  gamma<-cosh(rho)+cosh(th-delta)
+  truep1<-cosh(rho)/gamma
+  truep0=(1-truep1)
+  data.frame(id=1:length(th), th.true=th, cbind(truep0, truep1, 1), resp=rbinom(length(truep1),1, truep1) )
+}
+
+df.gpcm=list()
+rho=sort( c(runif(n_i-3, min=0.1, max=3), 0,1.5, 3 ) )
+unfolding.rho=list()
+for (i in 1:n_i){
+  df.gpcm=list(unfolding(th, delta=0, rho=rho[i] ) )
+  unfolding.rho[i]=df.gpcm
+}
+saveRDS(unfolding.rho, file="unfolding.rho.RData")
+
+# Delta Varies
+unfolding<-function(th,delta, rho) { #simulate data min andrich's irf
+  n<-cosh(rho)
+  gamma<-cosh(rho)+cosh(th-delta)
+  truep1<-cosh(rho)/gamma
+  truep0=(1-truep1)
+  data.frame(id=1:length(th), th.true=th, cbind(truep0, truep1, 1), resp=rbinom(length(truep1),1, truep1) )
+}
+
+delta=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3) )
+#  seq(from=-3, to=3, length.out=n_i)
+# sort(runif(n_i, min=-3, max=3) )
+unfolding.delta=list()
+for (i in 1:n_i){
+  df.gpcm=list(unfolding(th, delta=delta[i], rho=2 ) )
+  unfolding.delta[i]=df.gpcm
+}
+saveRDS(unfolding.delta, file="unfolding.delta.RData")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
