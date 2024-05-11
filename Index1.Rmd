@@ -1,0 +1,257 @@
+
+
+```{r}
+set.seed(1)
+n_i=100
+th=sort(rnorm(1000))
+resp_th= function(list){
+  df=data.frame(th)
+  for (i in 1:length(list)){
+    df[[i+1]]<-list[[i]][, ncol(list[[i]])]
+  }
+  colnames(df)<-c("th", paste("Item", 1:(length(list)),sep='') )
+  df
+}
+a_i<-sort(c(runif(n_i-6, min=0.1, max=3), 0, 0.14, 0.5, 1, 1.5, 3) )
+# bs<-data.frame(b1=0, b2=(sort(runif(n_i, min=0.1, max=2)) ) )
+bs<-data.frame(b1=0, b2=sort(c(runif(n_i-5, min=0.1, max=3), 0, 0.1, 1.4, 2, 3 )) ) #Crating c(b1, b2) pairs for CRFs.b2 ranging min 0.1 max 3
+b_2<-bs[,2]
+bs.c<-data.frame(b1=0, b2=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3 )) ) 
+a=1
+all.a2.val<-data.frame(a1=0, a2=sort( c(runif(n_i-3, min=-3, max=3), -2, 1, 3 )), a3=2 )
+all.c2.val<-data.frame(c1=0, c2=sort(c( runif(n_i-3, min=-3, max=3), -2, 1, 3 )), c3=2 )
+rho=sort( c(runif(n_i-3, min=0.1, max=3), 0,1.5, 3 ) )
+delta=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3) )
+```
+
+
+```{r}
+ordered.grm<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.Vary_b,a=1.RData")
+ordered.grm.a<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.Vary_a.RData")
+ordered.gpcm.a<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.gpcm.Vary_a.RData")
+crossed.pcm<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/crossed.pcm.RData")
+
+all.a2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/all.a2.RData")
+all.c2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/all.c2.RData")
+
+ordered.grm.const<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.const.RData")
+ordered.grm.a.const<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.a.const.RData")
+unfolding.rho<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/unfolding.rho.RData")
+unfolding.delta<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/unfolding.delta.RData")
+```
+
+
+```{r}
+simgrm.const<-function(th,b,a) {
+  invlogit<-function(z) 1/(1+exp(-z))
+  K<-length(b)+1
+  pr<-list()
+  for (i in 1:(K-1)) pr[[i]]<-invlogit(a*(th-b[i]))
+  pr<-do.call("cbind",pr)
+  pr<-cbind(1,pr,0)
+  p<-list()
+  for (i in 1:K) p[[i]]<-(pr[,i]-pr[,i+1])*0.75
+  p[[K+1]]=0.25
+  p<-do.call("cbind",p)
+  colnames(p)<-paste("truep",0:(ncol(p)-1),sep='')
+  resp<-numeric()
+  rowSums(p)
+  for (i in 1:length(th)) resp[i]<-which(rmultinom(1,1,p[i,])[,1]>0)-1
+  id=1:length(th)
+  data.frame(cbind(id, th.true=th, p, resp))
+}
+```
+
+
+
+```{r}
+resp1= resp_th(ordered.grm.a)[-1]
+out<-list()
+for (i in 1:n_i) {
+    z=resp1[,i]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(a_i[i], as.numeric(bs[i,]), order.stat)
+}
+z1<-do.call("rbind",out)
+plot(z1[,3],z1[,4],xlab='a',ylab='order',ylim=c(0.7, 1), main="GRM Vary a")
+```
+
+
+```{r}
+resp1= resp_th(ordered.grm)[-1]
+out<-list()
+for (i in 1:n_i) {
+    z=resp1[,i]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(a, as.numeric(bs[i,]), order.stat)
+}
+z2<-do.call("rbind",out)
+plot(z2[,3],z2[,4],xlab='b_2',ylab='order',ylim=c(0.7, 1), main="GRM Vary b")
+```
+
+
+
+```{r}
+resp1= resp_th(ordered.gpcm.a)[-1]
+out<-list()
+for (i in 1:n_i) {
+    z=resp1[,i]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(a_i[i], as.numeric(bs[i,]), order.stat)
+}
+z3<-do.call("rbind",out)
+plot(z3[,a],z3[,4],xlab='a_i',ylab='order',ylim=c(0.7, 1), main="GPCM Vary a")
+```
+
+
+
+```{r}
+resp1= resp_th(crossed.pcm)[-1]
+out<-list()
+for (i in 1:n_i) {
+    z=resp1[,i]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(as.numeric(bs.c[i,]), order.stat)
+}
+z5<-do.call("rbind",out)
+plot(z5[,2],z5[,3],xlab='b_2',ylab='order',ylim=c(0.6, 1), main="Crossed PCM")
+```
+
+
+```{r}
+resp1= resp_th(all.a2)[-1]
+out<-list()
+for (i in 1:n_i) {
+    z=resp1[,i]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(as.numeric(all.a2.val[i,]), order.stat)
+}
+z6<-do.call("rbind",out)
+plot(z6[,2],z6[,4],xlab='a_2',ylab='order',ylim=c(0.6, 1), main="Ordered NRM a2 Varies")
+```
+
+
+```{r}
+resp1= resp_th(all.c2)[-1]
+out<-list()
+for (i in 1:n_i) {
+    z=resp1[,i]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(as.numeric(all.c2.val[i,]), order.stat)
+}
+z7<-do.call("rbind",out)
+plot(z7[,2],z7[,4],xlab='c_2',ylab='order',ylim=c(0.6, 1), main="Disordered NRM c2")
+```
+
+
+
+
+```{r}
+resp1= resp_th(ordered.grm.const)[-1]
+out<-list()
+for (i in 1:n_i) {
+    z=resp1[,i]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(as.numeric(bs[i,2]), order.stat)
+}
+z10<-do.call("rbind",out)
+plot(z10[,1],z10[,2],xlab='b_2',ylab='order',ylim=c(0.6, 1), main="Ordered GRM with Constant")
+```
+
+
+
+
+```{r}
+resp1= resp_th(ordered.grm.a.const)[-1]
+out<-list()
+for (i in 1:n_i) {
+    z=resp1[,i]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(as.numeric(a_i[i]), order.stat)
+}
+z11<-do.call("rbind",out)
+plot(z11[,1],z11[,2],xlab='a_2',ylab='order',ylim=c(0.6, 1), main="Ordered GRM with Constant a varies")
+```
+
+
+
+unfolding.rho
+
+```{r}
+resp1= resp_th(unfolding.rho)[-1]
+out<-list()
+for (i in 1:n_i) {
+    z=resp1[,i]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(as.numeric(rho[i]), order.stat)
+}
+z12<-do.call("rbind",out)
+plot(z12[,1],z12[,2],xlab='rho',ylab='order',ylim=c(0.6, 1), main="Unfolding rho varies")
+```
+
+
+
+```{r}
+resp1= resp_th(unfolding.delta)[-1]
+out<-list()
+for (i in 1:n_i) {
+    z=resp1[,i]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(as.numeric(delta[i]), order.stat)
+}
+z12.<-do.call("rbind",out)
+plot(z12.[,1],z12.[,2],xlab='delta',ylab='order',ylim=c(0.6, 1), main="Unfolding Delta Varies")
+```
+
+
+
+```{r}
+measure1=list(z1, z2, z3, z3, z5, z6, z7, z7, z7, z10, z11, z12, z12., z12., z12. )
+saveRDS(measure1, file="C:/Users/Roza/Desktop/Order.12.15.23/Data/measure1.RData")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

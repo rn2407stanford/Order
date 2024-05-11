@@ -1,0 +1,341 @@
+
+
+
+```{r}
+set.seed(1)
+n_i=100
+th=sort(rnorm(1000))
+resp_th= function(list){
+  df=data.frame(th)
+  for (i in 1:length(list)){
+    df[[i+1]]<-list[[i]][, ncol(list[[i]])]
+  }
+  colnames(df)<-c("th", paste("Item", 1:(length(list)),sep='') )
+  df
+}
+a_i<-sort(c(runif(n_i-6, min=0.1, max=3), 0, 0.14, 0.5, 1, 1.5, 3) )
+# bs<-data.frame(b1=0, b2=(sort(runif(n_i, min=0.1, max=2)) ) )
+bs<-data.frame(b1=0, b2=sort(c(runif(n_i-5, min=0.1, max=3), 0, 0.1, 1.4, 2, 3 )) ) #Crating c(b1, b2) pairs for CRFs.b2 ranging min 0.1 max 3
+b_2<-bs[,2]
+bs.c<-data.frame(b1=0, b2=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3 )) ) 
+a=1
+all.a2.val<-data.frame(a1=0, a2=sort( c(runif(n_i-3, min=-3, max=3), -2, 1, 3 )), a3=2 )
+all.c2.val<-data.frame(c1=0, c2=sort(c( runif(n_i-3, min=-3, max=3), -2, 1, 3 )), c3=2 )
+rho=sort( c(runif(n_i-3, min=0.1, max=3), 0,1.5, 3 ) )
+delta=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3) )
+```
+
+```{r}
+ordered.grm<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.Vary_b,a=1.RData")
+ordered.grm.a<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.Vary_a.RData")
+ordered.gpcm.a<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.gpcm.Vary_a.RData")
+crossed.pcm<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/crossed.pcm.RData")
+
+all.a2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/all.a2.RData")
+all.c2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/all.c2.RData")
+
+ordered.grm.const<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.const.RData")
+ordered.grm.a.const<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.a.const.RData")
+unfolding.rho<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/unfolding.rho.RData")
+unfolding.delta<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/unfolding.delta.RData")
+```
+
+```{r}
+simgrm<-function(th,b,a) {
+  invlogit<-function(z) 1/(1+exp(-z))
+  K<-length(b)+1
+  pr<-list()
+  for (i in 1:(K-1)) pr[[i]]<-invlogit(a*(th-b[i]))
+  pr<-do.call("cbind",pr)
+  pr<-cbind(1,pr,0)
+  p<-list()
+  for (i in 1:K) p[[i]]<-pr[,i]-pr[,i+1]
+  p<-do.call("cbind",p)
+  colnames(p)<-paste("truep",0:(ncol(p)-1),sep='')
+  resp<-numeric()
+  for (i in 1:length(th)) resp[i]<-which(rmultinom(1,1,p[i,])[,1]>0)-1
+  id=1:length(th)
+  data.frame(cbind(id, th.true=th, p, resp))
+}
+
+simnrm<-function(th, c, a) {
+  K<-length(a)
+  z<-list()
+  for (k in 1:K) {
+    kern<-a[k]*th+c[k]
+    z[[k]]<-exp(kern)
+  }
+  z<-do.call("cbind", z)
+  den<-rowSums(z)
+  p<-z/den
+  colnames(p)<-paste("truep",0:(ncol(p)-1), sep='')
+  resp<-numeric()
+  for (i in 1:length(th)) resp[i]<-which(rmultinom(1, 1, p[i,])[,1]>0)-1
+  id=1:length(th)
+  data.frame(cbind(id, th.true=th, p, resp))
+}
+
+simpcm<-function(th,b,a) {
+  K<-length(b)+1
+  psi<-list()
+  psi[[1]]<-rep(1,length(th))
+  for (k in 1:(K-1)) {
+    kern<-k*th-sum(b[1:k])
+    psi[[k+1]]<-exp(a*kern)
+  }
+  psi<-do.call("cbind",psi)
+  den<-rowSums(psi)
+  p<-psi/den
+  colnames(p)<-paste("truep",0:(ncol(p)-1),sep='')
+  resp<-numeric()
+  for (i in 1:length(th)) resp[i]<-which(rmultinom(1,1,p[i,])[,1]>0)-1
+  id=1:length(th)
+  data.frame(cbind(id, th.true=th, p, resp))
+}
+
+```
+
+```{r}
+# GRM
+fun.grm<-function(list, b, a){
+  df<-data.frame()
+  for (i in 1:length(list)){
+    pcm1=list[[i]][,3:5]
+    th.true=list[[i]][,2]
+    O<-numeric()
+    for (thj in th.true) {
+      p<-pnorm(thj)
+      p<-runif(1,0,p)
+      thi<-qnorm(p)
+      p.first<-simgrm(thi, b=c(b[i,1], b[i,2]), a=a[i])[,3:5]   # bs[i,1], bs[i,2]
+      index=match(thj, th.true)
+      p.second<-pcm1[index,]
+      p=rbind(p.first, p.second)
+      p0<-p[2,1]*(p[1,2]+p[1,3])#x_i>x_j if x_j=0
+      p1<-p[2,2]*(p[1,3])#x_i>x_j if x_j=1
+      O[as.character(thj)]<-p0+p1
+      }
+    order=1-mean(O)
+    df<-rbind( df, order)
+  }
+  cbind(a, b, Order=df)
+}
+l1=fun.grm(ordered.grm.a, b=cbind(rep(0, n_i), rep(1, n_i)), a=a_i)
+plot(l1[,1], l1[,4], xlab='a_i',ylab='order', ylim=c(0.6,1))
+s1=fun.grm(ordered.grm, b=bs, a=rep(1, length(a_i) ) ) 
+plot(s1[,3], s1[,4], xlab='b2',ylab='order', ylim=c(0.6, 1))
+```
+
+```{r}
+# GPCM
+fun.pcm<-function(list, b, a){
+  df<-data.frame()
+  for (i in 1:length(list)){
+    pcm1=list[[i]][,3:5]
+    th.true=list[[i]][,2]
+    O<-numeric()
+    for (thj in th.true) {
+      p<-pnorm(thj)
+      p<-runif(1,0,p)
+      thi<-qnorm(p)
+      p.first<-simpcm(thi, b=c(b[i,1], b[i,2]), a=a[i])[,3:5]   # bs[i,1], bs[i,2]
+      index=match(thj, th.true)
+      p.second<-pcm1[index,]
+      p=rbind(p.first, p.second)
+      p0<-p[2,1]*(p[1,2]+p[1,3])# x_i>x_j if x_j=0
+      p1<-p[2,2]*(p[1,3])# x_i>x_j if x_j=1
+      O[as.character(thj)]<-p0+p1
+      }
+    order=1-mean(O)
+    df<-rbind( df, order)
+  }
+  cbind(a, b, Order=df)
+}
+l2=fun.pcm(ordered.gpcm.a, b=cbind(rep(0, n_i), rep(1, n_i)), a=a_i)
+plot(l2[,1], l2[,4], xlab='a',ylab='order', ylim=c(0.6,1))
+```
+
+
+```{r}
+# Crossed PCM
+
+fun.crossed<-function(list, bs.c, a){
+  df<-data.frame()
+  for (i in 1:length(list)){
+    pcm1=list[[i]][,3:5]
+    th.true=list[[i]][,2]
+    O<-numeric()
+    for (thj in th.true) {
+      p<-pnorm(thj)
+      p<-runif(1,0,p)
+      thi<-qnorm(p)
+      p.first<-simpcm(thi, b=c(bs.c[i,1], bs.c[i,2]), a=a[i])[,3:5]   # bs[i,1], bs[i,2]
+      index=match(thj, th.true)
+      p.second<-pcm1[index,]
+      p=rbind(p.first, p.second)
+      p0<-p[2,1]*(p[1,2]+p[1,3])# x_i>x_j if x_j=0
+      p1<-p[2,2]*(p[1,3])# x_i>x_j if x_j=1
+      O[as.character(thj)]<-p0+p1
+      }
+    order=1-mean(O)
+    df<-rbind( df, order)
+  }
+  cbind(a, bs.c, Order=df)
+}
+s3=fun.crossed(crossed.pcm, bs.c=bs.c, a=rep(1, length(a_i) ) ) 
+plot(s3[,3], s3[,4], xlab='b_2',ylab='order', ylim=c(0.6,1) )
+```
+
+```{r}
+# For NRM
+fun.nrm<-function(list, c, as){
+  df<-data.frame()
+  for (i in 1:length(list)){
+    pcm1=list[[i]][,3:5]
+    th.true=list[[i]][,2]
+    O<-numeric()
+    for (thj in th.true) {
+      p<-pnorm(thj)
+      p<-runif(1,0,p)
+      thi<-qnorm(p)
+      p.first<-simnrm(thi, c=c[i,], a=as.numeric(as[i,]) )[,3:5]
+      index=match(thj, th.true)
+      p.second<-pcm1[index,]
+      p=rbind(p.first, p.second)
+      p0<-p[2,1]*(p[1,2]+p[1,3])#x_i>x_j if x_j=0
+      p1<-p[2,2]*(p[1,3])#x_i>x_j if x_j=1
+      O[as.character(thj)]<-p0+p1
+      }
+    order=1-mean(O)
+    df<-rbind( df, order)
+  }
+  cbind(as, c, order=df)
+}
+s4=fun.nrm(all.a2, c=data.frame(c1=0, c2=rep(1, n_i), c3=2), as=all.a2.val)
+plot(s4[,2], s4[,7], xlab='a_2',ylab='order', xlim=c(-3,3), ylim=c(0.6,1), main="Ordered NRM a2 Vary")
+s5=fun.nrm(all.c2, c=all.c2.val, as=data.frame(a1=0, a2=rep(1,n_i), a3=2))
+plot(s5[,5], s5[,7], xlab='c_2',ylab='order', ylim=c(0.6,1), main="Ordered NRM Varied c2")
+```
+
+ordered.grm.const
+```{r}
+simgrm.const<-function(th,b,a) {
+  invlogit<-function(z) 1/(1+exp(-z))
+  K<-length(b)+1
+  pr<-list()
+  for (i in 1:(K-1)) pr[[i]]<-invlogit(a*(th-b[i]))
+  pr<-do.call("cbind",pr)
+  pr<-cbind(1,pr,0)
+  p<-list()
+  for (i in 1:K) p[[i]]<-(pr[,i]-pr[,i+1])*0.75
+  p[[K+1]]=0.25
+  p<-do.call("cbind",p)
+  colnames(p)<-paste("truep",0:(ncol(p)-1),sep='')
+  resp<-numeric()
+  rowSums(p)
+  for (i in 1:length(th)) resp[i]<-which(rmultinom(1,1,p[i,])[,1]>0)-1
+  id=1:length(th)
+  data.frame(cbind(id, th.true=th, p, resp))
+}
+```
+
+```{r}
+list=ordered.grm.const
+fun.grm.const<-function(list, b, a){
+  df<-data.frame()
+  for (i in 1:length(list)){
+    pcm1=list[[i]][,3:6]
+    th.true=list[[i]][,2]
+    O<-numeric()
+    for (thj in th.true) {
+      p<-pnorm(thj)
+      p<-runif(1,0,p)
+      thi<-qnorm(p)
+      p.first<-simgrm.const(thi, b=c(b[i,1], b[i,2]), a=a[i])[,3:6]   # bs[i,1], bs[i,2]
+      p.first
+      index=match(thj, th.true)
+      p.second<-pcm1[index,]
+      p=rbind(p.first, p.second)
+      p
+      p0<-p[2,1]*(p[1,2]+p[1,3] +p[1,4])#x_i>x_j if x_j=0
+      p1<-p[2,2]*(p[1,3]+p[1,4])#x_i>x_j if x_j=1
+      p2<-p[2,3]*(p[1,4])
+      O[as.character(thj)]<-p0+p1+p2
+      }
+    order=1-mean(O)
+    df<-rbind( df, order)
+  }
+  cbind(a, b, Order=df)
+}
+l8=fun.grm.const(ordered.grm.const, b=bs , a=rep(1, n_i))
+plot(l8[,3], l8[,4], xlab='b2',ylab='order', ylim=c(0.6,1))
+l9=fun.grm.const(ordered.grm.a.const, b=cbind(rep(0, n_i), rep(1, n_i)) , a=a_i)
+plot(l9[,1], l9[,4], xlab='a_i',ylab='order', ylim=c(0.6,1))
+```
+
+```{r}
+unfolding<-function(th,delta, rho) { #simulate data from andrich's irf
+  ##eqn 21.17 in handbook, u=1
+  n<-cosh(rho)
+  gamma<-cosh(rho)+cosh(th-delta)
+  truep1<-cosh(rho)/gamma
+  truep0=(1-truep1)
+  data.frame(id=1:length(th), th.true=th, cbind(truep0, truep1, 1), resp=rbinom(length(truep1),1, truep1) )
+}
+```
+
+```{r}
+fun.unfolding<-function(list, delta, rho){
+  df<-data.frame()
+  for (i in 1:length(list)){
+    pcm1=list[[i]][,3:4]
+    th.true=list[[i]][,2]
+    O<-numeric()
+    for (thj in th.true) {
+      p<-pnorm(thj)
+      p<-runif(1,0,p)
+      thi<-qnorm(p)
+      p.first<-unfolding(thi, delta=delta[i], rho=rho[i])[,3:4]   # bs[i,1], bs[i,2]
+      index=match(thj, th.true)
+      p.second<-pcm1[index,]
+      p=rbind(p.first, p.second)
+      p0<-p[2,1]*p[1,2]
+      O[as.character(thj)]<-p0
+      }
+    order=1-mean(O)
+    df<-rbind( df, order)
+  }
+  cbind(rho, delta, Order=df)
+}
+l10=fun.unfolding(unfolding.rho, delta=rep(0, n_i), rho=rho)
+plot(rho, l10[,3], xlab='rho',ylab='order', ylim=c(0.6,1))
+l11=fun.unfolding(unfolding.delta, delta=delta, rho=rep(2, n_i))
+plot(delta, l11[,3], xlab='delta',ylab='order', ylim=c(0.6,1))
+```
+
+```{r}
+measure2=list(l1, s1, l2, l2, s3, s4, s5, s5, s5, l8, l9, l10, l11, l11, l11)
+saveRDS(measure2, file="C:/Users/Roza/Desktop/Order.12.15.23/Data/measure2.RData")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

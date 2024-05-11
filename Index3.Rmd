@@ -1,0 +1,209 @@
+
+```{r}
+set.seed(1)
+library("mirt")
+n_i=100
+th=sort(rnorm(1000))
+resp_th= function(list){
+  df=data.frame(th)
+  for (i in 1:length(list)){
+    df[[i+1]]<-list[[i]][, ncol(list[[i]])]
+  }
+  colnames(df)<-c("th", paste("Item", 1:(length(list)),sep='') )
+  df
+}
+a_i<-sort(c(runif(n_i-6, min=0.1, max=3), 0, 0.14, 0.5, 1, 1.5, 3) )
+# bs<-data.frame(b1=0, b2=(sort(runif(n_i, min=0.1, max=2)) ) )
+bs<-data.frame(b1=0, b2=sort(c(runif(n_i-5, min=0.1, max=3), 0, 0.1, 1.4, 2, 3 )) ) #Crating c(b1, b2) pairs for CRFs.b2 ranging min 0.1 max 3
+b_2<-bs[,2]
+bs.c<-data.frame(b1=0, b2=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3 )) ) 
+a=1
+all.a2.val<-data.frame(a1=0, a2=sort( c(runif(n_i-3, min=-3, max=3), -2, 1, 3 )), a3=2 )
+all.c2.val<-data.frame(c1=0, c2=sort(c( runif(n_i-3, min=-3, max=3), -2, 1, 3 )), c3=2 )
+rho=sort( c(runif(n_i-3, min=0.1, max=3), 0,1.5, 3 ) )
+delta=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3) )
+```
+
+```{r}
+ordered.grm<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.Vary_b,a=1.RData")
+ordered.grm.a<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.Vary_a.RData")
+ordered.gpcm.a<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.gpcm.Vary_a.RData")
+crossed.pcm<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/crossed.pcm.RData")
+
+all.a2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/all.a2.RData")
+all.c2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/all.c2.RData")
+
+ordered.grm.const<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.const.RData")
+ordered.grm.a.const<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.a.const.RData")
+unfolding.rho<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/unfolding.rho.RData")
+unfolding.delta<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/unfolding.delta.RData")
+```
+
+```{r}
+resp.grm<-resp_th(ordered.grm.a)
+est.nrm<-mirt(resp.grm[,-1], 1, itemtype="nominal")
+itempar <- data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE) )
+itempar.est<-itempar[,c("items.a1", "items.a2", "items.a3" )]
+d=data.frame(d1=itempar.est[,2]-itempar.est[,1], d2=itempar.est[,3]-itempar.est[,2])
+d01=data.frame()
+for ( i in 2:n_i){
+  if (d[i,1]>0 & d[i,2]>0) {
+    f=mean(as.numeric(d[i,]))/3
+  }
+  else{ f=mean(as.numeric(d[i,which(d[i,]<0)]))/3 }
+  d01=rbind(d01, f)
+}
+plot(a_i[-1], d01[,1], main="GRM Vary a")
+```
+
+```{r}
+resp.grm<-resp_th(ordered.grm)
+est.nrm<-mirt(resp.grm[,-1], 1, itemtype="nominal")
+itempar <- data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE) )
+itempar.est<-itempar[,c("items.a1", "items.a2", "items.a3" )]
+d=data.frame(d1=itempar.est[,2]-itempar.est[,1], d2=itempar.est[,3]-itempar.est[,2])
+d02=data.frame()
+for ( i in 2:n_i){
+  if (d[i,1]>0 & d[i,2]>0) {
+    f=mean(as.numeric(d[i,]))/3
+  }
+  else{ f=mean(as.numeric(d[i,which(d[i,]<0)]))/3}
+  d02=rbind(d02, f)
+}
+plot(b_2[-1], d02[,1], main="GRM Vary b", ylim=c(0,2))
+```
+
+```{r}
+resp.grm<-resp_th(ordered.gpcm.a)
+est.nrm<-mirt(resp.grm[,-1], 1, itemtype="nominal")
+itempar <- data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE) )
+itempar.est<-itempar[,c("items.a1", "items.a2", "items.a3" )]
+d=data.frame(d1=itempar.est[,2]-itempar.est[,1], d2=itempar.est[,3]-itempar.est[,2])
+d03=data.frame()
+for ( i in 1:n_i){
+  if (d[i,1]>0 & d[i,2]>0) {
+    f=mean(as.numeric(d[i,]))/3
+  }
+  else{ f=mean(as.numeric(d[i,which(d[i,]<0)]))/3}
+  d03=rbind(d03, f)
+}
+plot(a_i, d03[,1], main="GPCM Vary a")
+```
+
+```{r}
+resp<-resp_th(crossed.pcm)
+est.nrm<-mirt(resp[,-1], 1, itemtype="nominal")
+itempar <- data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE) )
+itempar.est<-itempar[,c("items.a1", "items.a2", "items.a3" )]
+d=data.frame(d1=itempar.est[,2]-itempar.est[,1], d2=itempar.est[,3]-itempar.est[,2])
+d05=data.frame()
+for ( i in 1:n_i){
+  if (d[i,1]>0 & d[i,2]>0) {
+    f=mean(as.numeric(d[i,]))/3
+  }
+  else{ f=mean(as.numeric(d[i,which(d[i,]<0)]))/3}
+  d05=rbind(d05, f)
+}
+plot(bs.c[,2], d05[,1],  main="PCM Threshold Crossed", xlab="b2", ylim=c(0,3))
+```
+
+```{r}
+resp<-resp_th(all.a2)
+est.nrm<-mirt(resp[,-1], 1, itemtype="nominal")
+itempar <- data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE) )
+itempar.est<-itempar[,c("items.a1", "items.a2", "items.a3" )]
+d=data.frame(d1=itempar.est[,2]-itempar.est[,1], d2=itempar.est[,3]-itempar.est[,2])
+d06=data.frame()
+for ( i in 1:n_i){
+  if (d[i,1]>0 & d[i,2]>0) {
+    f=mean(as.numeric(d[i,]))/3
+  }
+  else{ f=mean(as.numeric(d[i,which(d[i,]<0)]))/3}
+  d06=rbind(d06, f)
+}
+plot(all.a2.val[,2], d06[,1],  main="Ordered NRM a2 Varies", xlab="a_2")
+```
+
+```{r}
+resp<-resp_th(all.c2)
+est.nrm<-mirt(resp[,-1], 1, itemtype="nominal")
+itempar <- data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE) )
+itempar.est<-itempar[,c("items.a1", "items.a2", "items.a3" )]
+d=data.frame(d1=itempar.est[,2]-itempar.est[,1], d2=itempar.est[,3]-itempar.est[,2])
+d07=data.frame()
+for ( i in 1:n_i){
+  if (d[i,1]>0 & d[i,2]>0) {
+    f=mean(as.numeric(d[i,]))/3
+  }
+  else{ f=mean(as.numeric(d[i,which(d[i,]<0)]))/3}
+  d07=rbind(d07, f)
+}
+plot(all.c2.val[,2], d07[,1],  main="Ordered NRM c2", xlab="c_2")
+```
+
+```{r}
+resp<-resp_th(ordered.grm.const)
+est.nrm<-mirt(resp[,-1], 1, itemtype="nominal")
+itempar <- data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE) )
+itempar.est<-itempar[,c("items.a1", "items.a2", "items.a3", "items.a4")]
+d=data.frame(d1=itempar.est[,2]-itempar.est[,1], d2=itempar.est[,3]-itempar.est[,2], d3=itempar.est[,4]-itempar.est[,3])
+d010=data.frame()
+for ( i in 1:n_i){
+  if (d[i,1]>0 & d[i,2]>0 & d[i,3]>0) {
+    f=mean(as.numeric(d[i,]))/3
+  }
+  else{ f=mean(as.numeric(d[i,which(d[i,]<0)]))/3}
+  d010=rbind(d010, f)
+}
+plot(bs[,2], d010[,1],  main="Ordered GRM with Constant", xlab="b_2")
+```
+
+```{r}
+resp<-resp_th(ordered.grm.a.const)
+est.nrm<-mirt(resp[,-1], 1, itemtype="nominal")
+itempar <- data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE) )
+itempar.est<-itempar[,c("items.a1", "items.a2", "items.a3", "items.a4")]
+d=data.frame(d1=itempar.est[,2]-itempar.est[,1], d2=itempar.est[,3]-itempar.est[,2], d3=itempar.est[,4]-itempar.est[,3])
+d011=data.frame()
+for ( i in 1:n_i){
+  if (d[i,1]>0 & d[i,2]>0 & d[i,3]>0) {
+    f=mean(as.numeric(d[i,]))/3
+  }
+  else{ f=mean(as.numeric(d[i,which(d[i,]<0)]))/3}
+  d011=rbind(d011, f)
+}
+plot(a_i, d011[,1], main="Ordered GRM with Constant a varies", xlab="a_i")
+```
+
+Unfolding
+```{r}
+resp<-resp_th(unfolding.rho)
+est.nrm<-mirt(resp[,-1], 1, itemtype="nominal")
+itempar.est <- data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE) )
+d012=data.frame(d1=(itempar.est[,2]-itempar.est[,1])/3)
+plot(rho, d012[,1], main="Unfolding rho Varies", xlab="rho")
+```
+
+```{r}
+resp<-resp_th(unfolding.delta)
+est.nrm<-mirt(resp[,-1], 1, itemtype="nominal")
+itempar.est <- data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE) )
+d012.=data.frame(d1=(itempar.est[,2]-itempar.est[,1])/3)
+plot(delta, d012.[,1], main="Unfolding delta Varies", xlab="delta")
+```
+
+```{r}
+measure8=list(d01, d02, d03, d03, d05, d06, d07, d07, d07, d010, d011, d012, d012., d012., d012. )
+saveRDS(measure8, file="C:/Users/Roza/Desktop/Order.12.15.23/Data/measure8.RData")
+```
+
+
+
+
+
+
+
+
+
+
+

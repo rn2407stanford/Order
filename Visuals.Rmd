@@ -1,0 +1,179 @@
+
+
+```{r}
+set.seed(1)
+n_i=100
+# Given list of item dataframes I separate item responses for each item to create response dataframe
+resp_th= function(list){
+  df=data.frame(th)
+  for (i in 1:length(list)){
+    df[[i+1]]<-list[[i]][, ncol(list[[i]])]
+  }
+  colnames(df)<-c("th", paste("Item", 1:(length(list)),sep='') )
+  df
+}
+a_i<-sort(c(runif(n_i-6, min=0.1, max=3), 0, 0.14, 0.5, 1, 1.5, 3) )
+# bs<-data.frame(b1=0, b2=(sort(runif(n_i, min=0.1, max=2)) ) )
+bs<-data.frame(b1=0, b2=sort(c(runif(n_i-5, min=0.1, max=3), 0, 0.1, 1.4, 2, 3 )) ) #Crating c(b1, b2) pairs for CRFs.b2 ranging min 0.1 max 3
+b_2<-bs[,2]
+bs.c<-data.frame(b1=0, b2=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3 )) ) 
+a=1
+all.a2.val<-data.frame(a1=0, a2=sort( c(runif(n_i-3, min=-3, max=3), -2, 1, 3 )), a3=2 )
+all.c2.val<-data.frame(c1=0, c2=sort(c( runif(n_i-3, min=-3, max=3), -2, 1, 3 )), c3=2 )
+rho=sort( c(runif(n_i-3, min=0.1, max=3), 0,1.5, 3 ) )
+delta=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3) )
+```
+
+```{r}
+library("ggplot2")
+library("ggpubr")
+measure1<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/measure1.RData")
+measure2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/measure2.RData")
+measure4<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/measure4.RData")
+measure6<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/measure6.RData")
+measure8<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/measure8.RData")
+measure9<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/measure9.RData")
+```
+
+```{r}
+colors <- c("GRM" = "red", "GPCM" = "blue")
+
+p1=ggplot() + geom_smooth(data=data.frame(measure1[[1]]), mapping=aes(x=X1, y=X4, col="GRM"), size=0.5, span = 0.7, se=F) + geom_smooth(data=data.frame(measure1[[3]]), mapping=aes(x=X1, y=X4, col="GPCM"), size=0.5, span = 0.7, se=F) +ylim(0.50,1) + theme_classic() +ylab("Order Index 1") +xlab(expression(a)) + scale_color_manual(values = colors) + geom_hline(yintercept=0.756, linetype="dotted", color="red", size=0.7) + geom_hline(yintercept=0.651, linetype="dotted", color="blue", size=0.7) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25)) 
+
+p2=ggplot() + geom_smooth(data=data.frame(measure2[[1]]), mapping=aes(x=measure2[[1]][,1], y=measure2[[1]][,4], col="GRM"), size=0.5, span = 0.5, se=F) + geom_smooth(data=data.frame(measure2[[3]]), mapping=aes(x=measure2[[3]][,1], y=measure2[[3]][,4], col="GPCM"), size=0.5, span = 0.7, se=F) +ylim(0.50,1) + theme_classic() +ylab("Order Index 2") +xlab(expression(a)) + scale_color_manual(values = colors) + geom_hline(yintercept=0.74, linetype="dotted", color="red", size=0.7) + geom_hline(yintercept=0.667, linetype="dotted", color="blue", size=0.7) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))
+
+p4=ggplot() + geom_smooth(data=data.frame(a_i, bs, df1.=measure4[[1]][,1]), mapping=aes(x=a_i, y=df1., col="GRM"), size=0.5, span = 0.7, se=F) + geom_smooth(data=data.frame(a_i, bs, df3=measure4[[3]][,1]), mapping=aes(x=a_i, y=df3, col="GPCM"), size=0.5, span = 0.7, se=F) +ylim(0, 1) + theme_classic() +ylab("Order Index 4") +xlab(expression(a)) + scale_color_manual(values = colors) + geom_hline(yintercept=0.507, linetype="dotted", color="red", size=0.7) + geom_hline(yintercept=0.254, linetype="dotted", color="blue", size=0.7)
+
+p6=ggplot() + geom_smooth(data=data.frame(a_i=a_i[-1], bs[-1,], df1.=measure6[[1]][,1]), mapping=aes(x=a_i, y=df1., col="GRM"), size=0.5, span = 0.7, se=F)+ geom_smooth(data=data.frame(a_i=a_i[-1], bs[-1,], df3=measure6[[3]][,1]), mapping=aes(x=a_i, y=df3, col="GPCM"), size=0.5, span = 0.7, se=F) +ylim(0,1) + theme_classic() +ylab("Order Index 5") +xlab(expression(a)) + scale_color_manual(values = colors) + scale_color_manual(values = colors)+ geom_hline(yintercept=0.0239, linetype="dotted", color="red", size=0.7) + geom_hline(yintercept=0.12, linetype="dotted", color="blue", size=0.7)
+
+p8=ggplot() + geom_smooth(data=data.frame(a_i=a_i[-1], df1.=measure8[[1]][,1]), mapping=aes(x=a_i, y=df1., col="GRM"), size=0.5, span = 0.7, se=F) + geom_smooth(data=data.frame(a_i, bs, df3=measure8[[3]][,1]), mapping=aes(x=a_i, y=df3, col="GPCM"), size=0.5, span = 0.7, se=F) + theme_classic() +ylab("Order Index 3") +xlab(expression(a)) + scale_color_manual(values = colors)+ geom_hline(yintercept=0.012886862, linetype="dotted", color="red", size=0.7) + geom_hline(yintercept=-0.06, linetype="dotted", color="blue", size=0.7)
+
+p9=ggplot() + geom_smooth(data=data.frame(a_i=a_i[-1], df1.=measure9[[1]][,1]), mapping=aes(x=a_i, y=df1., col="GRM"), size=0.5, span = 0.7, se=F) + geom_smooth(data=data.frame(a_i=a_i[-1], df3=measure9[[3]][,1]), mapping=aes(x=a_i, y=df3, col="GPCM"), size=0.5, span = 0.7, se=F) + theme_classic() +ylab("Order Index 6") +xlab(expression(a)) + scale_color_manual(values = colors)+ geom_hline(yintercept=0.34, linetype="dotted", color="red", size=0.7) + geom_hline(yintercept=0, linetype="dotted", color="blue", size=0.7) + scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.5, by = 0.25))
+myplot=ggarrange(p1, p2, p8, p4, p6, p9, ncol=3, nrow=3,  common.legend = TRUE, legend="top"); ggsave("sim1.grm.gpcma.jpg", myplot, height=5); myplot
+```
+```{r}
+colors <- c("GRM" = "red", "GPCM" = "blue")
+
+p1=ggplot() + geom_smooth(data=data.frame(measure1[[2]]), mapping=aes(x=X3, y=X4, col="GRM"), size=0.5, se=F) + geom_smooth(data=data.frame(measure1[[5]]), mapping=aes(x=X2, y=X3, col="GPCM"), size=0.5, se=F) +ylim(0.5,1) + theme_classic() +ylab("Order Index 1") +xlab(expression(b[2])) + scale_color_manual(values = colors) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p2=ggplot() + geom_smooth(data=data.frame(measure2[[2]]), mapping=aes(x=b2, y=measure2[[2]][,4], col="GRM"), size=0.5, se=F) + geom_smooth(data=data.frame(measure2[[5]]), mapping=aes(x=measure2[[5]][,3], y=measure2[[5]][,4], col="GPCM"), size=0.5, se=F) +ylim(0.5,1) + theme_classic() +ylab("Order Index 2") +xlab(expression(b[2])) + scale_color_manual(values = colors) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25)) + scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p4=ggplot() + geom_smooth(data=data.frame(a_i, bs, df2=measure4[[2]][,1]), mapping=aes(x=b2, y=df2, col="GRM"), size=0.5, se=F) + geom_smooth(data=data.frame(a_i, b2=bs.c[,2], df4=measure4[[5]][,1]), mapping=aes(x=b2, y=df4, col="GPCM"), size=0.5, se=F) +ylim(0,1) + theme_classic() +ylab("Order Index 4") +xlab(expression(b[2])) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p6=ggplot() + geom_smooth(data=data.frame(a_i=a_i[-1], bs[-1,], df2=measure6[[2]][,1]), mapping=aes(x=b2, y=df2, col="GRM"), size=0.5, se=F) + geom_smooth(data=data.frame(a_i, b2=bs.c[,2], df4=measure6[[5]][,1]), mapping=aes(x=b2, y=df4, col="GPCM"), size=0.5, se=F)+ ylim(0,1) + theme_classic() +ylab("Order Index 5") +xlab(expression(b[2])) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p8=ggplot() + geom_smooth(data=data.frame( bs[-1,], df2=measure8[[2]][,1]), mapping=aes(x=b2, y=df2, col="GRM"), size=0.5, span=0.5, se=F) + geom_smooth(data=data.frame(a_i, b2=bs.c[,2], df4=measure8[[5]][,1]), mapping=aes(x=b2, y=df4, col="GPCM"), size=0.5, span=0.5, se=F) + ylim(0,1)+ theme_classic() +ylab("Order Index 3") +xlab(expression(b[2])) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p9=ggplot() + geom_smooth(data=data.frame( bs[-1,], df2=measure9[[2]][,1]), mapping=aes(x=b2, y=df2, col="GRM"), size=0.5, span=0.5, se=F) + geom_smooth(data=data.frame(b2=bs.c[-1,2], df4=measure9[[5]][,1]), mapping=aes(x=b2, y=df4, col="GPCM"), size=0.5, span=0.5, se=F) + ylim(0,1.5)+ theme_classic() +ylab("Order Index 6") +xlab(expression(b[2])) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1)) + scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.5, by = 0.25))
+
+myplot=ggarrange(p1, p2, p8, p4, p6, p9, ncol=3, nrow=3,  common.legend = TRUE, legend="top") ; ggsave("sim1.grm.gpcmb.jpg", myplot, height=5) ; myplot
+```
+```{r}
+colors <- c("Nominal" = "blue")
+p1=ggplot() + geom_smooth(data=data.frame(measure1[[6]]), mapping=aes(x=X2, y=X4, col="Nominal"), size=0.5, span = 0.5, se=F) +ylim(0.5,1) + theme_classic() +ylab("Order Index 1") +xlab(expression(a[2])) + scale_color_manual(values = colors) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25)) + scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p2=ggplot() + geom_smooth(data=data.frame(measure2[[6]]), mapping=aes(x=a2, y=measure2[[6]][,7], col="Nominal"), size=0.5, span = 0.5, se=F) +ylim(0.5,1) + theme_classic() +ylab("Order Index 2") +xlab(expression(a[2])) + scale_color_manual(values = colors) +  scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p4=ggplot() + geom_smooth(data=data.frame(all.a2.val, df6=measure4[[6]][,1]), mapping=aes(x=a2, y=df6, col="Nominal"), size=0.5, span = 0.5, se=F) +ylim(0,1) + theme_classic() +ylab("Order Index 4") +xlab(expression(a[2])) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p6=ggplot() + geom_smooth(data=data.frame(all.a2.val, df10=measure6[[6]][,1]), mapping=aes(x=a2, y=df10, col="Nominal"), size=0.5, span = 0.5, se=F) +ylim(0, 1) + theme_classic() +ylab("Order Index 5") +xlab(expression(a[2])) + scale_color_manual(values = colors) + scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p8=ggplot() + geom_smooth(data=data.frame(all.a2.val, df10=measure8[[6]][,1]), mapping=aes(x=a2, y=df10, col="Nominal"), size=0.5, span = 0.5, se=F) + theme_classic() +ylab("Order Index 3") +xlab(expression(a[2])) + scale_color_manual(values = colors) + scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1)) + scale_y_continuous(limits = c(-1, 0.5), breaks = seq(-1, 0.5, by = 0.25)) + geom_hline(yintercept=0, linetype="dotted", color="blue", size=0.7)
+
+p9=ggplot() + geom_smooth(data=data.frame(all.a2.val[-1,], df10=measure9[[6]][,1]), mapping=aes(x=a2, y=df10, col="Nominal"), size=0.5, span = 0.5, se=F) + theme_classic() +ylab("Order Index 6") + xlab(expression(a[2])) + scale_color_manual(values = colors) + scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1)) + scale_y_continuous( breaks = seq(-1.5, 1.5, by = 0.5)) + geom_hline(yintercept=0, linetype="dotted", color="blue", size=0.7)
+
+myplot=ggarrange(p1, p2, p8, p4, p6, p9, ncol=3, nrow=3, common.legend = TRUE, legend=F); ggsave("sim2.Nominala.jpg", myplot, height=5); myplot
+```
+```{r}
+p1=ggplot() + geom_smooth(data=data.frame(measure1[[7]]), mapping=aes(x=X2, y=X4, col="Nominal"), size=0.5, se=F) + theme_classic() +ylab("Order Index 1") +xlab(expression(c[2])) + scale_color_manual(values = colors)+ylim(0.6,1) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p2=ggplot() + geom_smooth(data=data.frame(measure2[[7]]), mapping=aes(x=c2, y=measure2[[7]][,7], col="Nominal"), size=0.5, se=F)  +ylim(0.6,1) + theme_classic() +ylab("Order Index 2") +xlab(expression(c[2])) + scale_color_manual(values = colors)+ scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p4=ggplot() + geom_smooth(data=data.frame(all.c2.val, df7=measure4[[7]][,1]), mapping=aes(x=c2, y=df7, col="Nominal"), size=0.5, se=F) +ylim(0,1) + theme_classic() +ylab("Order Index 4") +xlab(expression(c[2])) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p6=ggplot() + geom_smooth(data=data.frame(all.c2.val, df11=measure6[[7]][,1]), mapping=aes(x=c2, y=df11, col="Nominal"), size=0.5, se=F) +ylim(0, 1) + theme_classic() +ylab("Order Index 5") +xlab(expression(c[2])) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p8=ggplot() + geom_smooth(data=data.frame(all.c2.val, df11=measure8[[7]][,1]), mapping=aes(x=c2, y=df11, col="Nominal"), size=0.5, span=0.4, se=F) + theme_classic() +ylab("Order Index 3") +xlab(expression(c[2])) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1)) + scale_y_continuous(limits = c(0, 0.50), breaks = seq(0, 0.50, by = 0.25))
+
+p9=ggplot() + geom_smooth(data=data.frame(all.c2.val[-1,], df11=measure9[[7]][,1]), mapping=aes(x=c2, y=df11, col="Nominal"), size=0.5, span=0.4, se=F) + theme_classic() +ylab("Order Index 6") +xlab(expression(c[2])) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1)) + scale_y_continuous(limits = c(0, 1.5), breaks = seq(0, 1.5, by = 0.25))
+
+myplot=ggarrange(p1, p2, p8, p4, p6, p9, ncol=3, nrow=3,  common.legend = TRUE, legend=F); ggsave("sim2.Nominalb.jpg", myplot, height=5); myplot
+```
+```{r}
+colors <- c("Nominal" = "blue")
+p1=ggplot() + geom_smooth(data=data.frame(measure1[[12]]), mapping=aes(x=X1, y=X2, col="Nominal"), size=0.5, se=F) +ylim(0.6,1) + theme_classic() +ylab("Order Index 1") +xlab(expression(rho)) + scale_color_manual(values = colors)+ scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))
+
+p2=ggplot() + geom_smooth(data=data.frame(rho=rho, measure2[[12]]), mapping=aes(x=rho, y=measure2[[12]][,3], col="Nominal"), size=0.5, se=F) +ylim(0.6,1) + theme_classic() +ylab("Order Index 2") +xlab(expression(rho)) + scale_color_manual(values = colors)+ scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))
+
+p4=ggplot() + geom_smooth(data=data.frame(rho=rho, df12=measure4[[11]][,1]), mapping=aes(x=rho, y=df12, col="Nominal"), size=0.5, se=F) +ylim(0,1) + theme_classic() +ylab("Order Index 4") +xlab(expression(rho)) + scale_color_manual(values = colors)  + scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.25))
+
+p6=ggplot() + geom_smooth(data=data.frame(rho=rho, df12=measure6[[12]][,1]), mapping=aes(x=rho, y=df12, col="Nominal"), size=0.5, se=F) +ylim(0,1) + theme_classic() +ylab("Order Index 5") +xlab(expression(rho)) + scale_color_manual(values = colors)  + scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.25))
+
+p8=ggplot() + geom_smooth(data=data.frame(rho=rho, df12=measure8[[12]][,1]), mapping=aes(x=rho, y=df12, col="Nominal"), size=0.5, se=F) + ylim(0,1)+ theme_classic() + ylab("Order Index 3") +xlab(expression(rho)) + scale_color_manual(values = colors) + scale_y_continuous(limits = c(0, 0.5), breaks = seq(0, 0.50, by = 0.25))
+
+p9=ggplot() + geom_smooth(data=data.frame(rho=rho[-1], df12=measure9[[12]][,1]), mapping=aes(x=rho, y=df12, col="Nominal"), size=0.5, se=F) + ylim(0,0.5)+ theme_classic() + ylab("Order Index 6") +xlab(expression(rho)) + scale_color_manual(values = colors)+ scale_y_continuous( breaks = seq(0, 1.25, by = 0.25))
+
+myplot=ggarrange(p1, p2, p8, p4, p6, p9, ncol=3, nrow=3,  common.legend = TRUE, legend=F); ggsave("sim2.Unfoldingrho.jpg", myplot, height=5); myplot
+```
+```{r}
+colors <- c("Nominal" = "blue")
+p1=ggplot() + geom_smooth(data=data.frame(measure1[[13]]), mapping=aes(x=X1, y=X2, col="Nominal"), size=0.5, se=F) + theme_classic() +ylab("Order Index 1") +xlab(expression(delta)) + scale_color_manual(values = colors)+ylim(0.6,1) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25)) + scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p2=ggplot() + geom_smooth(data=data.frame(delta=delta, measure2[[13]]), mapping=aes(x=delta, y=measure2[[13]][,3], col="Nominal"), size=0.5, se=F)  +ylim(0.6,1) + theme_classic() +ylab("Order Index 2") +xlab(expression(delta)) + scale_color_manual(values = colors)+ scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p4=ggplot() + geom_smooth(data=data.frame(delta=delta, df12.=measure4[[12]][,1]), mapping=aes(x=delta, y=df12., col="Nominal"), size=0.5, se=F) +ylim(0,0.8) + theme_classic() +ylab("Order Index 4") +xlab(expression(delta)) + scale_color_manual(values = colors)+ scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.25))+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p6=ggplot() + geom_smooth(data=data.frame(delta=delta, df12.=measure6[[13]][,1]), mapping=aes(x=delta, y=df12., col="Nominal"), size=0.5, se=F) +ylim(0,1) + theme_classic() +ylab("Order Index 5") +xlab(expression(delta)) + scale_color_manual(values = colors) + scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.25))+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1))
+
+p8=ggplot() + geom_smooth(data=data.frame(delta=delta, df12.=measure8[[13]][,1]), mapping=aes(x=delta, y=df12., col="Nominal"), size=0.5, se=F) + theme_classic() +ylab("Order Index 3") +xlab(expression(delta)) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1)) + scale_y_continuous(limits = c(-0.5, 0.5), breaks = seq(-0.5, 0.5, by = 0.25))
+
+p9=ggplot() + geom_smooth(data=data.frame(delta=delta[-1], df12.=measure9[[13]][,1]), mapping=aes(x=delta, y=df12., col="Nominal"), size=0.5, se=F) + theme_classic() +ylab("Order Index 6") +xlab(expression(delta)) + scale_color_manual(values = colors)+ scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, by = 1)) + scale_y_continuous( breaks = seq(-1, 1, by = 0.25))
+
+myplot=ggarrange(p1, p2, p8, p4, p6, p9, ncol=3, nrow=3,  common.legend = TRUE, legend=F); ggsave("sim2.UnfoldingDelta.jpg", myplot, height=5); myplot
+```
+```{r}
+colors <- c("Nominal" = "blue")
+p1=ggplot() + geom_smooth(data=data.frame(measure1[[10]]), mapping=aes(x=X1, y=X2, col="Nominal"), size=0.5, se=F) + geom_smooth(data=data.frame(measure1[[14]]), mapping=aes(x=X1, y=X2), col="red", size=0.5, se=F) +ylim(0.6,1) + theme_classic() +ylab("Order Index 1") +xlab(expression(b[2])) + scale_color_manual(values = colors) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))
+
+p2=ggplot() + geom_smooth(data=data.frame(measure2[[10]]), mapping=aes(x=measure2[[10]][,3], y=measure2[[10]][,4], col="Nominal"), size=0.5, se=F) + geom_smooth(data=data.frame(measure2[[14]]), mapping=aes(x=measure2[[14]][,3], y=measure2[[14]][,5]), col="red", size=0.5, se=F) +ylim(0.6,1) + theme_classic() +ylab("Order Index 2") +xlab(expression(b[2])) + scale_color_manual(values = colors) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))
+
+p4=ggplot() + geom_smooth(data=data.frame(b2=bs[,2], df9=measure4[[9]][,1]), mapping=aes(x=b2, y=df9, col="Nominal"), size=0.5, se=F) + geom_smooth(data=data.frame(b2=bs[,2], df9=measure4[[13]][,1]), mapping=aes(x=b2, y=df9), col="red", size=0.5, se=F) +ylim(0,0.8) + theme_classic() +ylab("Order Index 4") +xlab(expression(b[2])) + scale_color_manual(values = colors)+ scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.25))
+
+p6=ggplot() + geom_smooth(data=data.frame(b2=bs[-1,2], df10=measure6[[10]][,1]), mapping=aes(x=b2, y=df10, col="Nominal"), size=0.5, se=F) + geom_smooth(data=data.frame(b2=bs[-c(1,2),2], df10=measure6[[14]][,1]), mapping=aes(x=b2, y=df10), col="red", size=0.5, se=F) +ylim(-0.25, 0) + theme_classic() +ylab("Order Index 5") +xlab(expression(b[2])) + scale_color_manual(values = colors)+ scale_y_continuous(limits = c(-0.25, 1), breaks = seq(-0.25, 1, by = 0.25))
+
+p8=ggplot() + geom_smooth(data=data.frame(b2=bs[,2], df10=measure8[[10]][,1]), mapping=aes(x=b2, y=df10, col="Nominal"), size=0.5, span=0.4, se=F) + geom_smooth(data=data.frame(b2=bs[-c(1,100),2], df10=measure8[[14]][,1]), mapping=aes(x=b2, y=df10), col="red", size=0.5, span=0.4, se=F) +ylim(-0.5,0)+ theme_classic() +ylab("Order Index 3") +xlab(expression(b[2])) + scale_color_manual(values = colors) + scale_y_continuous( limits=c(-0.50, 0.25) , breaks = seq(-1, 1, by = 0.25))
+
+p9=ggplot() + geom_smooth(data=data.frame(b2=bs[-1,2], df10=measure9[[10]][,1]), mapping=aes(x=b2, y=df10, col="Nominal"), size=0.5, se=F) + geom_smooth(data=data.frame(b2=bs[-1,2], df10=measure9[[14]][,1]), mapping=aes(x=b2, y=df10), col="red", size=0.5, se=F) + theme_classic() +ylab("Order Index 6") +xlab(expression(b[2])) + scale_color_manual(values = colors) + scale_y_continuous(limits=c(-1, 0.75), breaks = seq(-1, 1, by = 0.25))
+
+myplot=ggarrange(p1, p2, p8, p4, p6, p9, ncol=3, nrow=3,  common.legend = TRUE, legend=F); ggsave("sim2.orderdisorderb.jpg", myplot, height=5); myplot
+```
+```{r}
+colors <- c("Nominal" = "blue")
+p1=ggplot() + geom_smooth(data=data.frame(measure1[[11]]), mapping=aes(x=X1, y=X2, col="Nominal"), size=0.5, se=F) + geom_smooth(data=data.frame(measure1[[15]]), mapping=aes(x=X1, y=X2), col="red", size=0.5, se=F) + theme_classic() +ylab("Order Index 1") +xlab(expression(a)) + scale_color_manual(values = colors)+ylim(0.6,1) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))
+
+p2=ggplot() + geom_smooth(data=data.frame(measure2[[11]]), mapping=aes(x=measure2[[11]][,1], y=measure2[[11]][,4], col="Nominal"), size=0.5, se=F)  + geom_smooth(data=data.frame(measure2[[15]]), mapping=aes(x=measure2[[15]][,1], y=measure2[[15]][,5]), col="red", size=0.5, se=F) + ylim(0.6,1) + theme_classic() +ylab("Order Index 2") +xlab(expression(a)) + scale_color_manual(values = colors) + scale_y_continuous(limits = c(0.50, 1), breaks = seq(0.50, 1, by = 0.25))
+
+p4=ggplot() + geom_smooth(data=data.frame(a=a_i, df10=measure4[[10]][,1]), mapping=aes(x=a, y=df10, col="Nominal"), size=0.5, se=F) + geom_smooth(data=data.frame(a=a_i, df10=measure4[[14]][,1]), mapping=aes(x=a, y=df10), col="red", size=0.5, se=F) +ylim(0,0.8) + theme_classic() +ylab("Order Index 4") +xlab(expression(a)) + scale_color_manual(values = colors)+ scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.25))
+
+p6=ggplot() + geom_smooth(data=data.frame(a=a_i[-1], df11=measure6[[11]][,1]), mapping=aes(x=a, y=df11, col="Nominal"), size=0.5, se=F)  + geom_smooth(data=data.frame(a=a_i[-1], df11=measure6[[15]][,1]), mapping=aes(x=a, y=df11), col="red", size=0.5, se=F) +ylim(0, 1) + theme_classic() +ylab("Order Index 5") +xlab(expression(a)) + scale_color_manual(values = colors)+ scale_y_continuous(limits = c(-0.25, 1), breaks = seq(-0.25, 1, by = 0.25))
+
+p8=ggplot() + geom_smooth(data=data.frame(a=a_i, df11=measure8[[11]][,1]), mapping=aes(x=a, y=df11, col="Nominal"), size=0.5, se=F) + geom_smooth(data=data.frame(a=a_i, df11=measure8[[15]][,1]), mapping=aes(x=a, y=df11), col="red", size=0.5, se=F) + theme_classic() +ylab("Order Index 3") +xlab(expression(a)) + scale_color_manual(values = colors) + scale_y_continuous( breaks = seq(-1, 1, by = 0.25))
+
+p9=ggplot() + geom_smooth(data=data.frame(a=a_i[-1], df11=measure9[[11]][,1]), mapping=aes(x=a, y=df11, col="Nominal"), size=0.5, se=F) + geom_smooth(data=data.frame(a=a_i[-1], df11=measure9[[15]][,1]), mapping=aes(x=a, y=df11), col="red", size=0.5, se=F) + theme_classic() +ylab("Order Index 6") +xlab(expression(a)) + scale_color_manual(values = colors)  + scale_y_continuous( breaks = seq(-1, 1, by = 0.25))
+
+myplot=ggarrange(p1, p2, p8, p4, p6, p9, ncol=3, nrow=3,  common.legend = TRUE, legend=F); ggsave("sim2.orderdisordera.jpg", myplot, height=5); myplot
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

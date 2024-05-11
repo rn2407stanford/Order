@@ -1,0 +1,170 @@
+
+```{r}
+set.seed(1)
+library("mirt")
+n_i=100
+th=sort(rnorm(1000))
+resp_th= function(list){
+  df=data.frame(th)
+  for (i in 1:length(list)){
+    df[[i+1]]<-list[[i]][, ncol(list[[i]])]
+  }
+  colnames(df)<-c("th", paste("Item", 1:(length(list)),sep='') )
+  df
+}
+a_i<-sort(c(runif(n_i-6, min=0.1, max=3), 0, 0.14, 0.5, 1, 1.5, 3) )
+# bs<-data.frame(b1=0, b2=(sort(runif(n_i, min=0.1, max=2)) ) )
+bs<-data.frame(b1=0, b2=sort(c(runif(n_i-5, min=0.1, max=3), 0, 0.1, 1.4, 2, 3 )) ) #Crating c(b1, b2) pairs for CRFs.b2 ranging min 0.1 max 3
+b_2<-bs[,2]
+bs.c<-data.frame(b1=0, b2=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3 )) ) 
+a=1
+all.a2.val<-data.frame(a1=0, a2=sort( c(runif(n_i-3, min=-3, max=3), -2, 1, 3 )), a3=2 )
+all.c2.val<-data.frame(c1=0, c2=sort(c( runif(n_i-3, min=-3, max=3), -2, 1, 3 )), c3=2 )
+rho=sort( c(runif(n_i-3, min=0.1, max=3), 0,1.5, 3 ) )
+delta=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3) )
+```
+
+```{r}
+ordered.grm<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.Vary_b,a=1.RData")
+ordered.grm.a<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.Vary_a.RData")
+ordered.gpcm.a<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.gpcm.Vary_a.RData")
+crossed.pcm<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/crossed.pcm.RData")
+
+all.a2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/all.a2.RData")
+all.c2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/all.c2.RData")
+
+ordered.grm.const<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.const.RData")
+ordered.grm.a.const<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.a.const.RData")
+unfolding.rho<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/unfolding.rho.RData")
+unfolding.delta<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/unfolding.delta.RData")
+```
+
+# Order Tangent
+```{r}
+est.fun.nom<-function(resp){
+  l2=list()
+  library(mirt)
+  m <- mirt(resp, 1, itemtype = "nominal") # c(rep("graded", ncol(resp))))
+  th<-fscores(m)
+  colnames(th)="th"
+  for (i in 1:ncol(resp)){
+    item<-extract.item(m, i)
+    pr<-probtrace(item, th)
+    id=1:nrow(resp)
+    df=list(cbind(id, th=th, pr, resp[i]))
+    l2[i]=df
+  }
+  l2
+}
+```
+
+```{r}
+order=function(list){
+  ind=data.frame()
+  resp=resp_th(list)[,-1]
+  list=est.fun.nom(resp)
+  for (i in 2:length(list)){
+    df=list[[i]]
+    th=df$th
+    sl1=coef(lm( df[,4]/df[,3]~th, data=df))[2]
+    sl2=coef(lm( df[,5]/df[,4]~th, data=df))[2]
+    sl3=coef(lm( df[,5]/df[,3]~th, data=df))[2]
+    d=c(atan(sl1), atan(sl2), atan(sl3))
+    if (d[1]>0 & d[2]>0 & d[3]>0) {
+      f=mean(as.numeric(d))
+    } else{ f=mean(d[which(d<0)] )}
+    ind=rbind(ind, f)
+  }
+  ind
+}
+```
+
+```{r}
+df1=order(ordered.grm.a)
+plot(a_i[-1], df1[,1])
+
+df2=order(ordered.grm)
+plot(bs[-1,2], df2[,1])
+
+df3=order(ordered.gpcm.a)
+plot(a_i[-1], df3[,1])
+
+df5=order(crossed.pcm)
+plot(bs.c[-1,2], df5[,1])
+
+df6=order(all.a2)
+plot(all.a2.val[-1, 2], df6[,1])
+
+df7=order(all.c2)
+plot(all.c2.val[-1, 2], df7[,1])
+```
+```{r}
+order1=function(list){
+  ind=data.frame()
+  resp=resp_th(list)[,-1]
+  list=est.fun.nom(resp)
+  for (i in 2:length(list)){
+    df=list[[i]]
+    th=df$th
+    sl1=coef(lm( df[,4]/df[,3]~th, data=df))[2]
+    sl2=coef(lm( df[,5]/df[,4]~th, data=df))[2]
+    sl3=coef(lm( df[,6]/df[,5]~th, data=df))[2]
+    sl4=coef(lm( df[,6]/df[,4]~th, data=df))[2]
+    sl5=coef(lm( df[,6]/df[,3]~th, data=df))[2]
+    sl6=coef(lm( df[,5]/df[,3]~th, data=df))[2]
+    d=c(atan(sl1), atan(sl2), atan(sl3), atan(sl4), atan(sl5), atan(sl6) )
+    if (d[1]>0 & d[2]>0 & d[3]>0 & d[4]>0 & d[5]>0 & d[6]>0) {
+      f=mean(as.numeric(d))
+    } else{ f=mean(d[which(d<0)] )}
+    ind=rbind(ind, f)
+  }
+  ind
+}
+
+df10=order1(ordered.grm.const)
+plot(bs[-1,2], df10[,1], ylim=c(-1.5,1.5))
+
+df11=order1(ordered.grm.a.const)
+plot(a_i[-1], df11[,1], ylim=c(-1.5,1.5))
+```
+```{r}
+list=unfolding.delta
+order2=function(list){
+  ind=data.frame()
+  resp=resp_th(list)[,-1]
+  list=est.fun.nom(resp)
+  for (i in 2:length(list)){
+    df=list[[i]]
+    th=df$th
+    sl1=coef(lm( df[,4]/df[,3]~th, data=df))[2]
+    f=c(atan(sl1))
+    ind=rbind(ind, f)
+  }
+  ind
+}
+
+df12=order2(unfolding.rho)
+plot(rho[-1], df12[,1])
+
+df12.=order2(unfolding.delta)
+plot(delta[-1], df12.[,1], ylim=c(-1.5,1.5))
+```
+
+```{r}
+measure9=list(df1, df2, df3, df3, df5, df6, df7, df7, df9, df10, df11, df12, df12., df12., df12. )
+saveRDS(measure9, file="C:/Users/Roza/Desktop/Order.12.15.23/Data/measure9.RData")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+

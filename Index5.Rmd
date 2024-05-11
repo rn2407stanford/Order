@@ -1,0 +1,160 @@
+
+```{r}
+set.seed(1)
+library("mirt")
+n_i=100
+th=sort(rnorm(1000))
+resp_th= function(list){
+  df=data.frame(th)
+  for (i in 1:length(list)){
+    df[[i+1]]<-list[[i]][, ncol(list[[i]])]
+  }
+  colnames(df)<-c("th", paste("Item", 1:(length(list)),sep='') )
+  df
+}
+a_i<-sort(c(runif(n_i-6, min=0.1, max=3), 0, 0.14, 0.5, 1, 1.5, 3) )
+# bs<-data.frame(b1=0, b2=(sort(runif(n_i, min=0.1, max=2)) ) )
+bs<-data.frame(b1=0, b2=sort(c(runif(n_i-5, min=0.1, max=3), 0, 0.1, 1.4, 2, 3 )) ) #Crating c(b1, b2) pairs for CRFs.b2 ranging min 0.1 max 3
+b_2<-bs[,2]
+bs.c<-data.frame(b1=0, b2=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3 )) ) 
+a=1
+all.a2.val<-data.frame(a1=0, a2=sort( c(runif(n_i-3, min=-3, max=3), -2, 1, 3 )), a3=2 )
+all.c2.val<-data.frame(c1=0, c2=sort(c( runif(n_i-3, min=-3, max=3), -2, 1, 3 )), c3=2 )
+rho=sort( c(runif(n_i-3, min=0.1, max=3), 0,1.5, 3 ) )
+delta=sort(c(runif(n_i-3, min=-3, max=3), -3, 0,3) )
+```
+
+```{r}
+ordered.grm<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.Vary_b,a=1.RData")
+ordered.grm.a<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.Vary_a.RData")
+ordered.gpcm.a<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.gpcm.Vary_a.RData")
+crossed.pcm<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/crossed.pcm.RData")
+
+all.a2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/all.a2.RData")
+all.c2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/all.c2.RData")
+
+ordered.grm.const<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.const.RData")
+ordered.grm.a.const<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/ordered.grm.a.const.RData")
+unfolding.rho<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/unfolding.rho.RData")
+unfolding.delta<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/unfolding.delta.RData")
+```
+
+```{r}
+# Measuring Order with Distance Matrices
+ord<-resp_th(ordered.grm.a)
+df1.<-data.frame()
+for ( i in 3:length(ord)){
+  ordered_item<-c(rep(0, table(ord[,i])[1] ), rep(1, table(ord[,i])[2]), rep(2, table(ord[,i])[3]))
+  df1<-1-mean(abs(ord[,i]-ordered_item) )
+  df1.<-rbind(df1., df1)
+}
+plot(a_i[-1], df1.[,1], ylim=c(0,1), main="GRM Vary a")
+```
+```{r}
+ord<-resp_th(ordered.gpcm.a)
+df3<-data.frame()
+for ( i in 3:length(ord)){
+  ordered_item<-c(rep(0, table(ord[,i])[1] ), rep(1, table(ord[,i])[2]), rep(2, table(ord[,i])[3]))
+  df1<-1-mean(abs(ord[,i]-ordered_item) )
+  df3<-rbind(df3, df1)
+}
+plot(a_i[-1], df3[,1], ylim=c(0,1), main="GPCM Vary a")
+```
+
+```{r}
+ord<-resp_th(crossed.pcm)
+df5<-data.frame()
+for ( i in 2:length(ord)){
+  ordered_item<-c(rep(0, table(ord[,i])[1] ), rep(1, table(ord[,i])[2]), rep(2, table(ord[,i])[3]))
+  df1<-1-mean(abs(ord[,i]-ordered_item) )
+  df5<-rbind(df5, df1)
+}
+plot(bs.c[,2], df5[,1], ylim=c(0,1), main="Crossed PCM Vary b", xlab='b_2')
+```
+
+```{r}
+ord<-resp_th(all.a2)
+df6<-data.frame()
+for ( i in 2:length(ord)){
+  ordered_item<-c(rep(0, table(ord[,i])[1] ), rep(1, table(ord[,i])[2]), rep(2, table(ord[,i])[3]))
+  df1<-1-mean(abs(ord[,i]-ordered_item) )
+  df6<-rbind(df6, df1)
+}
+plot(all.a2.val[,2], df6[,1], ylim=c(0,1), main="Ordered NRM a2 Varies", xlab='a_2')
+```
+
+```{r}
+ord<-resp_th(all.c2)
+df7<-data.frame()
+for ( i in 2:length(ord)){
+  ordered_item<-c(rep(0, table(ord[,i])[1] ), rep(1, table(ord[,i])[2]), rep(2, table(ord[,i])[3]))
+  df1<-1-mean(abs(ord[,i]-ordered_item) )
+  df7<-rbind(df7, df1)
+}
+plot(all.c2.val[,2], df7[,1], ylim=c(0,1), main="Ordered NRM c2", xlab='c_2')
+```
+
+```{r}
+ord<-resp_th(ordered.grm.const)
+df10<-data.frame()
+for ( i in 3:length(ord)){
+  ordered_item<-c(rep(0, table(ord[,i])[1] ), rep(1, table(ord[,i])[2]), rep(2, table(ord[,i])[3]), rep(3, table(ord[,i])[4]))
+  df1<-1-mean(abs(ord[,i]-ordered_item) )
+  df10<-rbind(df10, df1)
+}
+plot(bs[-1,2], df10[,1], main="Ordered GRM b_2 Varies", xlab='b_2')
+```
+
+```{r}
+ord<-resp_th(ordered.grm.a.const)
+df11<-data.frame()
+for ( i in 3:length(ord)){
+  ordered_item<-c(rep(0, table(ord[,i])[1] ), rep(1, table(ord[,i])[2]), rep(2, table(ord[,i])[3]), rep(3, table(ord[,i])[4]))
+  df1<-1-mean(abs(ord[,i]-ordered_item) )
+  df11<-rbind(df11, df1)
+}
+plot(a_i[-1], df11[,1], main="Ordered GRM a3 Varies", xlab='a_i')
+```
+
+```{r}
+ord<-resp_th(unfolding.rho)
+df12<-data.frame()
+for ( i in 2:length(ord)){
+  ordered_item<-c(rep(0, table(ord[,i])[1] ), rep(1, table(ord[,i])[2]))
+  df1<-1-mean(abs(ord[,i]-ordered_item) )
+  df12<-rbind(df12, df1)
+}
+plot(rho, df12[,1], ylim=c(0,2), main="Unfolding rho Varies", xlab='rho')
+```
+
+```{r}
+ord<-resp_th(unfolding.delta)
+df12.<-data.frame()
+for ( i in 2:length(ord)){
+  ordered_item<-c(rep(0, table(ord[,i])[1] ), rep(1, table(ord[,i])[2]))
+  df1<-1-mean(abs(ord[,i]-ordered_item) )
+  df12.<-rbind(df12., df1)
+}
+plot(delta, df12.[,1], ylim=c(0,2), main="Unfolding delta Varies", xlab='delta')
+```
+
+```{r}
+measure6=list(df1., df2, df3, df3, df5, df6, df7, df7, df9, df10, df11, df12, df12., df12., df12. )
+saveRDS(measure6, file="C:/Users/Roza/Desktop/Order.12.15.23/Data/measure6.RData")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
