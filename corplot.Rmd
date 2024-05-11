@@ -1,0 +1,47 @@
+
+```{r}
+empirical1<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/empirical1.RData")
+empirical2<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/empirical2.RData")
+empirical3<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/empirical3.RData")
+empirical4<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/empirical4.RData")
+empirical5<-readRDS("C:/Users/Roza/Desktop/Order.12.15.23/Data/empirical5.RData")
+
+empirical1=cbind(empirical1[[1]], empirical1[[2]], empirical1[[3]], empirical1[[4]], empirical1[[5]], empirical1[[6]]); colnames(empirical1)=c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")
+
+empirical2=cbind(empirical2[[1]], empirical2[[2]], empirical2[[3]], empirical2[[4]], empirical2[[5]], empirical2[[6]]); colnames(empirical2)=c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")
+
+empirical3=cbind(empirical3[[1]], empirical3[[2]], empirical3[[3]], empirical3[[4]], empirical3[[5]], empirical3[[6]]); colnames(empirical3)=c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")
+
+empirical4=cbind(empirical4[[1]], empirical4[[2]], empirical4[[3]], empirical4[[4]], empirical4[[5]], empirical4[[6]]); colnames(empirical4)=c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")
+
+empirical5=cbind(empirical5[[1]], empirical5[[2]], empirical5[[3]], empirical5[[4]], empirical5[[5]], empirical5[[6]]); colnames(empirical5)=c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")
+
+all=rbind(empirical1, empirical2, empirical3, empirical4, empirical5)
+```
+
+```{r}
+library("corrplot")
+library("ggplot2")
+
+cor1=corrplot(round(cor(empirical1[,c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")] ), 1 ), method="circle", addCoef.col = 'black', title="mpsycho_learnemo.Rdata", mar=c(0,0,1,0))
+cor2=corrplot(round(cor(empirical2[,c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")]), 1 ), method="circle", addCoef.col = 'black', mar=c(0,0,1,0)) 
+cor3=corrplot(round(cor(empirical3[,c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")]), 1 ), method="circle", addCoef.col = 'black', title="mpsycho_wilpat.Rdata", mar=c(0,0,1,0))
+cor4=corrplot(round(cor(empirical4[,c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")]), 1 ), method="circle", addCoef.col = 'black', title="mpsycho_YouthDep.Rdata", mar=c(0,0,1,0))
+cor5=corrplot(round(cor(empirical5[,c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")]), 1 ), method="circle", addCoef.col = 'black', mar=c(0,0,1,0))
+corall=corrplot(round(cor(all[,c("Index1", "Index2", "Index3", "Index4", "Index5", "Index6")]), 1 ), method="circle", addCoef.col = 'black', title="all", mar=c(0,0,1,0))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

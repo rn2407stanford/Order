@@ -1,0 +1,286 @@
+
+```{r}
+library("mudfold")
+library("mirt")
+data(Loneliness)
+## Loneliness.RData
+x<-Loneliness
+id<-1:nrow(x)
+L<-list()
+for (i in 1:ncol(x)) L[[i]]<-data.frame(id=id,item=colnames(x)[i],resp=as.numeric(x[,i]))
+df<-data.frame(do.call("rbind",L))
+save(df,file="loneliness_mudfold.Rdata")
+```
+
+```{r}
+data=x
+data=data-1
+data=data.frame(lapply(data, as.numeric))
+est.graded<-mirt(data, 1, itemtype="graded" )
+est.gpcm<-mirt(data, 1, itemtype="gpcm" )
+est.pcm<-mirt(data, 1, itemtype="Rasch" )
+est.nominal<-mirt(data, 1, itemtype="nominal")
+```
+
+```{r}
+for (i in 1:length(data)){
+  print(itemplot(est.nominal, i))
+}
+```
+
+```{r}
+data$sum_scores=rowSums(data,na.rm=TRUE)
+data=data[order(data$sum_scores), ]
+
+for (i in 1:(length(data)-1)){
+  plot(data$sum_scores, data[,i], pch=16)
+  abline(lm(data[,i] ~ data$sum_scores))
+  x=aggregate(x = data$sum_scores, by= list(data[,i]), FUN = mean)[,2]
+  points(x = c(x), y = c(0,1,2), pch = 16, col="red", cex=2)
+  lines(x, y=c(0,1,2), type = "b", col="red")
+}
+```
+
+```{r}
+hist(data$sum_scores)
+sd(data$sum_scores)
+(table(data$sum_scores)/sum(table(data$sum_scores)))*100
+plot(table(data$sum_scores))
+```
+# Index1
+```{r}
+resp1= data[, -length(data)]
+out<-list()
+for (i in 1:ncol(resp1)) {
+    z=resp1[,i]
+    z=z[complete.cases(z)]
+    del<-outer(z,z,'-')
+    zz<-del[lower.tri(del,diag=FALSE)]
+    order.stat<-sum(zz>=0)/length(zz)
+    out[[i]]<-c(order.stat)
+}
+z1<-do.call("rbind",out)
+plot(1:ncol(resp1), z1,xlab='Item Number',ylab='order',ylim=c(0.7, 1), main="Index 1")
+data.frame(z1)
+```
+# Index 2
+```{r}
+resp=resp1
+dam="nominal"
+l2=list()
+library(mirt)
+m <- mirt(resp, 1, itemtype = dam)
+par<-data.frame(coef(m, IRTpars=TRUE, simplify=TRUE))
+par=par[,1:6]
+th.est<-fscores(m)
+colnames(th.est)="th.est"
+for (i in 1:ncol(resp)){
+  item<-extract.item(m, i)
+  pr<-probtrace(item, th.est)
+  id=1:nrow(resp)
+  df=list(cbind(id, th.est, pr, resp[i]))
+  l2[i]=df
+}
+
+simnrm<-function(th, c, a) {
+  K<-length(a)
+  z<-list()
+  for (k in 1:K) {
+    kern<-a[k]*th+c[k]
+    z[[k]]<-exp(kern)
+  }
+  z<-do.call("cbind", z)
+  den<-rowSums(z)
+  p<-z/den
+  colnames(p)<-paste("P.",1:ncol(p), sep='')
+  resp<-numeric()
+  for (i in 1:length(th)) resp[i]<-which(rmultinom(1, 1, p[i,])[,1]>0)-1
+  id=1:length(th)
+  data.frame(cbind(id, th.true=th, p, resp))
+}
+
+c=par[,4:6]
+as=par[,1:3]
+list=l2
+# For NRM
+fun.nrm<-function(list, c, as){
+  df<-data.frame()
+  for (i in 1:length(list)){
+    pcm1=list[[i]][,3:5]
+    th.true=list[[i]][,2]
+    O<-numeric()
+    for (thj in th.true) {
+      p<-pnorm(thj)
+      p<-runif(1,0,p)
+      thi<-qnorm(p)
+      p.first<-simnrm(thi, c=as.numeric(c[i,]), a=as.numeric(as[i,]) )[,3:5]
+      index=match(thj, th.true)
+      p.second<-pcm1[index,]
+      p=rbind(p.first, p.second)
+      p0<-p[2,1]*(p[1,2]+p[1,3])#x_i>x_j if x_j=0
+      p1<-p[2,2]*(p[1,3])#x_i>x_j if x_j=1
+      O[as.character(thj)]<-p0+p1
+      }
+    order=1-mean(O)
+    df<-rbind( df, order)
+  }
+  cbind(as, c, order=df)
+}
+
+s4=fun.nrm(list, c, as)
+plot(1:ncol(resp1), s4[,7], xlab='Item Number',ylab='order', ylim=c(0.6,1), main="Index 2")
+data.frame(s4[,7])
+```
+
+# Index 3
+```{r}
+est.nrm<-mirt(resp1, 1, itemtype="nominal")
+par<-data.frame(coef(est.nrm, IRTpars=TRUE, simplify=TRUE))
+itempar.est<-par[,c("items.a1", "items.a2", "items.a3")]
+d=data.frame(d1=itempar.est[,2]-itempar.est[,1], d2=itempar.est[,3]-itempar.est[,2])
+d08=data.frame()
+i=1
+for ( i in 1:nrow(d)){
+  if (d[i,1]>0 & d[i,2]>0) {
+    f=mean(as.numeric(d[i,]))/3
+  }
+  else{ f=mean(as.numeric(d[i,which(d[i,]<0)]))/3 }
+  d08=rbind(d08, f)
+}
+plot(1:(length(resp1)), d08[,1])
+d08
+```
+
+# Index 4
+```{r}
+vec<-function(L){
+  df<-data.frame()
+  for (i in 1:length(L)){
+    s<-sum(L>=L[i])
+    df<-rbind(df,s)
+  }
+  df
+}
+
+set.seed(1)
+RH2.cond<-function(L, cond){
+  n<-length(L)
+  B<-as.matrix(vec(cond))
+  list1<-list()
+  list2<-list()
+  inter<-list()
+  for (i in 1:n){
+    list1[[i]]<-c(which(L>=L[i]))
+    list2[[i]]<-c(which(cond>=cond[i]))
+    inter[[i]]<-intersect(list1[[i]], list2[[i]] )
+  }
+  inter.length<-lengths(inter)
+  (-1/n) * sum( log2(inter.length /B ) )
+}
+
+ord = data
+df1.<-data.frame()
+for ( i in 1:(length(ord)-1)){
+  ord2=ord[,c(i, length(ord) )]
+  df1<-1-RH2.cond(as.numeric(ord2[,1]), cond=ord2[,2])
+  df1.<-rbind(df1., df1)
+}
+plot(1:(length(ord)-1), df1.[,1], ylim=c(0,1), main="Index 4", xlab="Item Number")
+df1.
+```
+
+# Index 5
+```{r}
+# Measuring Order with Distance Matrices
+ord = data
+df1b<-data.frame()
+for ( i in 1:(length(ord)-1)){
+  ord1=ord[,i]
+  ordered_item<-c(rep(0, table(ord1)[1] ), rep(1, table(ord1)[2]),  rep(2, table(ord1)[3]) )
+  df1<-1-mean(abs(ord1-ordered_item) )
+  df1b<-rbind(df1b, df1)
+}
+plot(1:(length(ord)-1), df1b[,1], main="Index 6", xlab="Item Number")
+df1b
+```
+
+# Index 6
+```{r}
+est.fun.nom<-function(resp){
+  l2=list()
+  library(mirt)
+  m <- mirt(resp, 1, itemtype = "nominal") # c(rep("graded", ncol(resp))))
+  th<-fscores(m)
+  colnames(th)="th"
+  for (i in 1:ncol(resp)){
+    item<-extract.item(m, i)
+    pr<-probtrace(item, th)
+    id=1:nrow(resp)
+    df=list(cbind(id, th=th, pr, resp[i]))
+    l2[i]=df
+  }
+  l2
+}
+
+ind=data.frame()
+list=est.fun.nom(resp)
+for (i in 1:length(list)){
+  df=list[[i]]
+  th=df$th
+  sl1=coef(lm( df[,4]/df[,3]~th, data=df))[2]
+  sl2=coef(lm( df[,5]/df[,4]~th, data=df))[2]
+  sl3=coef(lm( df[,5]/df[,3]~th, data=df))[2]
+  d=c(atan(sl1), atan(sl2), atan(sl3))
+  if (d[1]>0 & d[2]>0 & d[3]>0) {
+    f=mean(as.numeric(d))
+  } else{ f=mean(d[which(d<0)] )}
+  ind=rbind(ind, f)
+}
+d09=ind
+```
+
+```{r}
+library("ggplot2")
+l=data.frame(z1)
+s=data.frame(s4[,7])
+legend_colors <- c("Index1" = "red", "Index2" = "orange", "Index3" = "burlywood4", "Index4" = "green", "Index5" = "blue", "Index6" = "cadetblue1")
+p1=ggplot() + 
+  geom_line(data=l, mapping=aes(x=1:(length(ord)-1), y=l[,1], col="Index1")  ) + 
+  geom_line(data=s, mapping=aes(x=1:(length(ord)-1), y=s[,1] ,col="Index2") ) + 
+  geom_line(data=data.frame(x.axis=1:(length(ord)-1), d08[,1]), mapping=aes(x=x.axis, y=d08[,1], col="Index3"  )) + 
+  geom_line(data=df1., mapping=aes(x=1:(length(ord)-1), y=df1.[,1], col="Index4" )) + 
+  geom_line(data=df1b, mapping=aes(x=1:(length(ord)-1), y=df1b[,1], col="Index5" )) +
+  geom_line(data=d09, mapping=aes(x=1:(length(ord)-1), y=d09[,1] , col="Index6") ) + 
+  theme_classic() +scale_color_manual(values = legend_colors)+ylab("Indices")+xlab("Item Number") + scale_x_continuous(limits = c(0, length(resp1)) , breaks = seq(1, length(resp1), by = 1), labels = paste0("Item", paste0(seq(1,length(resp1),1)) ), guide = guide_axis(angle = 45)) + geom_vline(xintercept = seq(from=1, to=length(resp1)), col="lightgray") + ggtitle("loneliness_mudfold.Rdata") + ylim(-1.4,1.5)
+
+
+ggplot() + 
+  geom_line(data=l, mapping=aes(x=1:(length(ord)-1), y=l[,1], col="Index1")  ) + 
+  geom_line(data=s, mapping=aes(x=1:(length(ord)-1), y=s[,1] ,col="Index2") ) + 
+  geom_line(data=data.frame(x.axis=1:(length(ord)-1), d08[,1]), mapping=aes(x=x.axis, y=d08[,1], col="Index3"  )) + 
+  geom_line(data=df1., mapping=aes(x=1:(length(ord)-1), y=df1.[,1], col="Index4" ) )+ 
+  geom_line(data=df1b, mapping=aes(x=1:(length(ord)-1), y=df1b[,1], col="Index5"  ))+
+  geom_line(data=d09, mapping=aes(x=1:(length(ord)-1), y=d09[,1] , col="Index6") ) +
+  theme_classic() +scale_color_manual(values = legend_colors)+ylab("Indices")+xlab("Item Number")+ scale_x_continuous(limits = c(0, length(resp1)), breaks = seq(0, length(resp1), by = 1))+ geom_vline(xintercept = seq(from=1, to=length(resp1)),  col="lightgray")+ ggtitle("loneliness_mudfold.Rdata") 
+ggsave("Empirical2.jpg", p1, height=5)
+p1
+```
+```{r}
+empirical2=list(Index1=data.frame(z1), Index2=data.frame(s4[,7]), Index3=d08, Index4=df1., Index5=df1b, Index6=d09)
+saveRDS(empirical2, file="C:/Users/Roza/Desktop/Order.12.15.23/Data/empirical2.RData")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
